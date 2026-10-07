@@ -126,6 +126,28 @@ test("empty takes do not schedule playback", () => {
   assert.deepEqual(hits, []);
 });
 
+test("replays the same take multiple times without consuming or mutating it", async () => {
+  const { player, time, hits } = createHarness();
+  const take = Object.freeze([
+    Object.freeze({ padId: "kick", offsetMs: 5 }),
+    Object.freeze({ padId: "snare", offsetMs: 15 }),
+  ]);
+
+  const firstPlayback = player.play(take);
+  time.advanceTo(15);
+  assert.deepEqual(await firstPlayback.done, { status: "completed" });
+  const secondPlayback = player.play(take);
+  time.advanceTo(30);
+  assert.deepEqual(await secondPlayback.done, { status: "completed" });
+
+  assert.deepEqual(take, [
+    { padId: "kick", offsetMs: 5 },
+    { padId: "snare", offsetMs: 15 },
+  ]);
+  assert.deepEqual(hits.map(({ padId }) => padId), ["kick", "snare", "kick", "snare"]);
+  assert.deepEqual(hits.map(({ actualAt }) => actualAt), [5, 15, 20, 30]);
+});
+
 test("rejects non-FIFO or invalid offsets instead of silently reordering them", () => {
   const { player } = createHarness();
 
