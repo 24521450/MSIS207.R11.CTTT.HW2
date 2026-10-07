@@ -78,6 +78,8 @@ Các kiểm tra dùng Node test runner tích hợp, không cần `npm install`. 
 
 Đã rà trực tiếp trong trình duyệt ở chiều rộng 375px: lưới không tràn ngang; click, A/S/L, Enter và Space phát pad; ghi/dừng/phát lại/hủy/xóa cập nhật trạng thái; focus bàn phím còn rõ khi pad sáng. Đã kiểm tra ba mẫu đại diện trong browser và không có lỗi console. Chín WAV đều hợp lệ và tái tạo cho cùng SHA-256 qua hai lần chạy generator.
 
+`npm test` chạy 26 kiểm tra Node.js tích hợp; tất cả đều đạt.
+
 Thời điểm phát thực tế phụ thuộc event loop, tải trang và khả năng của trình duyệt; `setTimeout` cùng HTML audio không đảm bảo độ chính xác sample-level. Recorder giữ timestamp monotonic và beat player lên lịch theo offset đã ghi trong giới hạn của browser.
 
 ## Kịch bản bảo vệ trong 3 phút

@@ -59,7 +59,7 @@ The architecture follows the HW2 requirements on pages 23–24 of the supplied L
 - [x] Tab, Enter, and Space can operate controls; focus is visible and the 375px layout has no horizontal overflow.
 - [x] Recorder and replay scheduling are covered with a fake clock; the interface and representative sounds were checked in a browser.
 
-The final automated run uses Node's built-in test runner and has 25 passing checks. The browser smoke check at 375px found no console errors. Samples are reproducible from the checked-in generator.
+The final automated run uses Node's built-in test runner and has 26 passing checks. The browser smoke check at 375px found no console errors. Samples are reproducible from the checked-in generator.
 
 ## Defense walkthrough
 
