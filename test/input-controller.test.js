@@ -98,6 +98,21 @@ test("routes button activation through the same callback as keyboard input", () 
   assert.deepEqual(activations.map(({ inputMethod }) => inputMethod), ["button", "keyboard"]);
 });
 
+test("maps every default pad key to its matching stable pad ID", () => {
+  const bindings = [
+    ["kick", "a"], ["snare", "s"], ["closed-hat", "d"],
+    ["open-hat", "f"], ["clap", "g"], ["low-tom", "h"],
+    ["mid-tom", "j"], ["high-tom", "k"], ["crash", "l"],
+  ];
+  const buttons = bindings.map(([id, key]) => new FakeButton({ id, key, sound: `audio/${id}.wav` }));
+  const { document, activations } = setup(buttons);
+
+  for (const [padId, key] of bindings) document.emit("keydown", { key: key.toUpperCase() });
+
+  assert.deepEqual(activations.map(({ padId }) => padId), bindings.map(([padId]) => padId));
+  assert.ok(activations.every(({ inputMethod }) => inputMethod === "keyboard"));
+});
+
 test("ignores repeats, modifiers, composition, and editable controls", () => {
   const { document, activations } = setup();
   const base = { key: "a", repeat: false };
