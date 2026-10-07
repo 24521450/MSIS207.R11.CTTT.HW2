@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#11131a">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self'; style-src 'self'; media-src 'self'">
+    <meta name="description" content="Bộ trống trên trình duyệt với chín âm thanh, bàn phím và máy ghi nhịp.">
+    <title>Nhịp Trống — Drum Kit</title>
+    <link rel="stylesheet" href="styles/tokens.css">
+    <link rel="stylesheet" href="styles/main.css">
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="site-header">
+        <a class="brand" href="./" aria-label="Nhịp Trống, trang chủ">
+          <span class="brand__mark" aria-hidden="true">N</span>
+          <span class="brand__name">Nhịp Trống</span>
+        </a>
+        <p class="site-header__note">Web Audio Lab <span aria-hidden="true">/</span> HW2</p>
+      </header>
+
+      <main class="main-content">
+        <section class="intro" aria-labelledby="page-title">
+          <p class="eyebrow"><span class="eyebrow__dot" aria-hidden="true"></span> Sân khấu của bạn</p>
+          <h1 id="page-title">Tạo nhịp theo<br>cách của bạn.</h1>
+          <p class="intro__copy">Chạm vào pad hoặc dùng bàn phím. Ghi lại nhịp, rồi nghe lại theo đúng khoảng cách bạn đã chơi.</p>
+        </section>
+
+        <section class="drum-console" aria-labelledby="kit-heading">
+          <div class="console-heading">
+            <div>
+              <p class="eyebrow eyebrow--muted">Drum machine <span aria-hidden="true">/</span> 09 sounds</p>
+              <h2 id="kit-heading">Bộ trống</h2>
+            </div>
+            <p class="console-heading__hint"><span class="signal-dot" aria-hidden="true"></span> Sẵn sàng chơi</p>
+          </div>
+
+          <div class="pads" aria-label="Chín pad trống">
+            <button class="pad pad--kick" type="button" data-pad-id="kick" data-key="a" data-sound="audio/samples/kick.wav">
+              <span class="pad__name">Kick</span>
+              <span class="pad__family">Bass drum</span>
+              <kbd class="pad__key" aria-hidden="true">A</kbd>
+            </button>
+            <button class="pad pad--snare" type="button" data-pad-id="snare" data-key="s" data-sound="audio/samples/snare.wav">
+              <span class="pad__name">Snare</span>
+              <span class="pad__family">Backbeat</span>
+              <kbd class="pad__key" aria-hidden="true">S</kbd>
+            </button>
+            <button class="pad pad--closed-hat" type="button" data-pad-id="closed-hat" data-key="d" data-sound="audio/samples/closed-hat.wav">
+              <span class="pad__name">Closed hat</span>
+              <span class="pad__family">Tight &amp; crisp</span>
+              <kbd class="pad__key" aria-hidden="true">D</kbd>
+            </button>
+            <button class="pad pad--open-hat" type="button" data-pad-id="open-hat" data-key="f" data-sound="audio/samples/open-hat.wav">
+              <span class="pad__name">Open hat</span>
+              <span class="pad__family">Long &amp; airy</span>
+              <kbd class="pad__key" aria-hidden="true">F</kbd>
+            </button>
+            <button class="pad pad--clap" type="button" data-pad-id="clap" data-key="g" data-sound="audio/samples/clap.wav">
+              <span class="pad__name">Clap</span>
+              <span class="pad__family">Hand clap</span>
+              <kbd class="pad__key" aria-hidden="true">G</kbd>
+            </button>
+            <button class="pad pad--low-tom" type="button" data-pad-id="low-tom" data-key="h" data-sound="audio/samples/low-tom.wav">
+              <span class="pad__name">Low tom</span>
+              <span class="pad__family">Deep tom</span>
+              <kbd class="pad__key" aria-hidden="true">H</kbd>
+            </button>
+            <button class="pad pad--mid-tom" type="button" data-pad-id="mid-tom" data-key="j" data-sound="audio/samples/mid-tom.wav">
+              <span class="pad__name">Mid tom</span>
+              <span class="pad__family">Round tom</span>
+              <kbd class="pad__key" aria-hidden="true">J</kbd>
+            </button>
+            <button class="pad pad--high-tom" type="button" data-pad-id="high-tom" data-key="k" data-sound="audio/samples/high-tom.wav">
+              <span class="pad__name">High tom</span>
+              <span class="pad__family">Bright tom</span>
+              <kbd class="pad__key" aria-hidden="true">K</kbd>
+            </button>
+            <button class="pad pad--crash" type="button" data-pad-id="crash" data-key="l" data-sound="audio/samples/crash.wav">
+              <span class="pad__name">Crash</span>
+              <span class="pad__family">Cymbal</span>
+              <kbd class="pad__key" aria-hidden="true">L</kbd>
+            </button>
+          </div>
+
+          <div class="console-footer">
+            <p class="keyboard-hint"><kbd>⌨</kbd> Bấm phím A–L để chơi</p>
+            <p class="polyphony-hint"><span aria-hidden="true">✳</span> Chơi nhiều tiếng cùng lúc</p>
+          </div>
+        </section>
+
+        <section class="recorder" aria-labelledby="recorder-heading">
+          <div class="recorder__info">
+            <p class="eyebrow eyebrow--muted">Beat recorder</p>
+            <h2 id="recorder-heading">Ghi lại nhịp</h2>
+            <p id="recording-count" class="recorder__count">0 nhịp trong bản ghi</p>
+          </div>
+          <div class="transport" role="group" aria-label="Điều khiển bản ghi">
+            <button id="record-button" class="control-button control-button--record" type="button">
+              <span class="control-button__icon" aria-hidden="true"></span> Ghi nhịp
+            </button>
+            <button id="stop-button" class="control-button" type="button" disabled>
+              <span class="control-button__icon control-button__icon--stop" aria-hidden="true"></span> Dừng
+            </button>
+            <button id="playback-button" class="control-button" type="button" disabled>
+              <span class="control-button__icon control-button__icon--play" aria-hidden="true"></span> Phát lại
+            </button>
+            <button id="clear-button" class="control-button control-button--quiet" type="button" disabled>
+              Xóa bản ghi
+            </button>
+          </div>
+          <p id="app-status" class="app-status" role="status" aria-live="polite" aria-atomic="true">Sẵn sàng. Chọn một pad để phát âm thanh.</p>
+        </section>
+
+        <aside class="defense-note" aria-label="Mẹo sử dụng">
+          <span class="defense-note__icon" aria-hidden="true">↗</span>
+          <p>Muốn đổi phím? Sửa <code>data-key</code> của một pad trong <code>index.html</code> rồi tải lại trang.</p>
+        </aside>
+      </main>
+
+      <footer class="site-footer">
+        <span>Made for the next beat.</span>
+        <span>MSIS207 <span aria-hidden="true">·</span> HW2</span>
+      </footer>
+    </div>
+  </body>
+</html>
