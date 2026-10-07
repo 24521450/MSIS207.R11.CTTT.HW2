@@ -9,3 +9,7 @@ Implementation is being delivered in atomic milestones. The required HTML data c
 ## Planned controls
 
 The default pads use `A S D F G H J K L`. The actual binding and local sample path will be read from each pad's `data-key` and `data-sound` attributes in `index.html`.
+
+## Audio samples
+
+Nine short mono WAV samples are generated with Python's standard library. To recreate them from the checked-in synthesizer, run `python scripts/generate_samples.py` from the project directory.
