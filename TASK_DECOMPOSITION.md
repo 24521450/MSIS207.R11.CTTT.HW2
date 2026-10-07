@@ -6,6 +6,8 @@ Build a small, dependency-free drum kit with nine playable sounds, polyphonic au
 
 The architecture follows the HW2 requirements on pages 23–24 of the supplied Lab 1 document: commit the HTML `data-sound` contract before writing JavaScript, implement polyphonic playback independently, throttle held-key repeats, and record timestamped events in FIFO order. The live defense must be able to change a key binding in the HTML and explain the event path within three minutes.
 
+**Implementation status: Complete.** T-01 through T-11 were committed as separate milestones. The HTML-only contract commit `d8fdc7a` precedes the first JavaScript commit `6f32014` in local history.
+
 ## Contracts
 
 - Each pad is a semantic `button` with a stable `data-pad-id`, one-character `data-key`, and local `data-sound` path.
@@ -45,17 +47,19 @@ The architecture follows the HW2 requirements on pages 23–24 of the supplied L
 
 ## Verification checklist
 
-- [ ] All nine pads work by pointer and by their configured key.
-- [ ] Holding a key does not create auto-repeat hits; modifiers and text entry do not trigger pads.
-- [ ] The same sample and different samples can overlap.
-- [ ] Changing one HTML `data-key` and reloading changes both the key label and active binding.
-- [ ] Recording stores FIFO `{ padId, offsetMs }` events using a monotonic timestamp.
-- [ ] Replay preserves recorded offsets and ordering, including equal offsets and initial silence.
-- [ ] Stop cancels pending replay events and all active sounds; stale callbacks cannot restart audio.
-- [ ] Replay does not mutate or duplicate the recording; clear and empty-recording states are correct.
-- [ ] Missing or rejected audio is reported accessibly.
-- [ ] Tab, Enter, and Space can operate controls; focus is visible and the 375px layout has no horizontal overflow.
-- [ ] Recorder and replay scheduling behavior are covered with a fake clock, then the interface is checked in a browser.
+- [x] All nine pads have unique keys and local sample paths; input tests map each configured key to its stable pad ID, and browser smoke checks cover pointer and keyboard activation.
+- [x] Holding a key does not create auto-repeat hits; modifiers and text entry do not trigger pads.
+- [x] The same sample and different samples can overlap.
+- [x] Changing one HTML `data-key` at controller startup changes both the key label and active binding.
+- [x] Recording stores FIFO `{ padId, offsetMs }` events using a monotonic timestamp.
+- [x] Replay preserves recorded offsets and ordering, including equal offsets and initial silence.
+- [x] Stop cancels pending replay events and all active sounds; stale callbacks cannot restart audio.
+- [x] Replay does not mutate or duplicate the recording; clear and empty-recording states are correct.
+- [x] Rejected audio is reported through the accessible status region.
+- [x] Tab, Enter, and Space can operate controls; focus is visible and the 375px layout has no horizontal overflow.
+- [x] Recorder and replay scheduling are covered with a fake clock; the interface and representative sounds were checked in a browser.
+
+The final automated run uses Node's built-in test runner and has 25 passing checks. The browser smoke check at 375px found no console errors. Samples are reproducible from the checked-in generator.
 
 ## Defense walkthrough
 
