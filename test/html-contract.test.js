@@ -44,3 +44,12 @@ test("HTML contains no inline event handlers and loads only an external module s
     source: attribute(tag, "src"),
   })), [{ type: "module", source: "src/main.js" }]);
 });
+
+test("HTML points to a checked-in local favicon", () => {
+  const iconTag = [...html.matchAll(/<link\b[^>]*>/gi)]
+    .map(([tag]) => tag)
+    .find((tag) => attribute(tag, "rel") === "icon");
+  assert.ok(iconTag);
+  assert.equal(attribute(iconTag, "href"), "favicon.svg");
+  assert.ok(existsSync(resolve(projectRoot, "favicon.svg")));
+});
