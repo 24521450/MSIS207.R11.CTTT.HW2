@@ -1,0 +1,8 @@
+{
+  "name": "msis207-hw2-drum-kit",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  }
+}
