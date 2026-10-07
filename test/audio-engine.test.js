@@ -65,7 +65,7 @@ test("creates a separate instance for every hit, including the same sample", asy
 });
 
 test("waits for all active instances to end", async () => {
-  const { engine } = createHarness();
+  const { engine, activeCounts } = createHarness();
   await engine.play("audio/samples/snare.wav");
   await engine.play("audio/samples/crash.wav");
   let idle = false;
@@ -79,6 +79,7 @@ test("waits for all active instances to end", async () => {
 
   assert.equal(idle, true);
   assert.equal(engine.activeCount, 0);
+  assert.deepEqual(activeCounts, [1, 2, 1, 0]);
 });
 
 test("reports rejected playback and removes the failed instance", async () => {
@@ -87,17 +88,18 @@ test("reports rejected playback and removes the failed instance", async () => {
       return Promise.reject(new DOMException("Playback blocked", "NotAllowedError"));
     }
   }
-  const { engine, errors } = createHarness(BlockedAudio);
+  const { engine, errors, activeCounts } = createHarness(BlockedAudio);
 
   assert.equal(await engine.play("audio/samples/kick.wav"), false);
   assert.equal(engine.activeCount, 0);
   assert.equal(errors.length, 1);
   assert.equal(errors[0].source, "audio/samples/kick.wav");
   assert.equal(errors[0].cause.name, "NotAllowedError");
+  assert.deepEqual(activeCounts, [1, 0]);
 });
 
 test("stopAll pauses and releases every tracked sound", async () => {
-  const { engine } = createHarness();
+  const { engine, activeCounts } = createHarness();
   await engine.play("audio/samples/kick.wav");
   await engine.play("audio/samples/snare.wav");
   const idlePromise = engine.whenIdle();
@@ -107,4 +109,5 @@ test("stopAll pauses and releases every tracked sound", async () => {
 
   assert.equal(engine.activeCount, 0);
   assert.ok(FakeAudio.instances.every((audio) => audio.paused && audio.currentTime === 0));
+  assert.deepEqual(activeCounts, [1, 2, 1, 0]);
 });

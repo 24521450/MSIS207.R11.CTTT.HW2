@@ -60,10 +60,14 @@ function pulsePad(button) {
   pulseTimers.set(button, timer);
 }
 
+function updateStopButton(activeCount = audioEngine.activeCount) {
+  stopButton.disabled = state === "idle" && activeCount === 0;
+}
+
 function updateControls() {
   const activeElement = document.activeElement;
   recordButton.disabled = state !== "idle";
-  stopButton.disabled = state === "idle";
+  updateStopButton();
   playbackButton.disabled = state !== "idle" || recorder.length === 0;
   clearButton.disabled = state !== "idle" || recorder.length === 0;
   inputController?.setEnabled(state !== "playing");
@@ -87,7 +91,13 @@ function reportAudioError(error) {
   if (state === "playing") playbackHadAudioError = true;
 }
 
-const audioEngine = createAudioEngine({ onError: reportAudioError });
+const audioEngine = createAudioEngine({
+  onError: reportAudioError,
+  onActiveChange(activeCount) {
+    // Keep this update local: audio ending or starting should not move focus.
+    updateStopButton(activeCount);
+  },
+});
 
 function dispatchPadHit(pad, { recordHit = false } = {}) {
   if (recordHit && state === "playing") return false;
@@ -140,7 +150,7 @@ recordButton.addEventListener("click", () => {
 });
 
 stopButton.addEventListener("click", () => {
-  if (state === "idle") return;
+  if (state === "idle" && audioEngine.activeCount === 0) return;
   const previousState = state;
   if (previousState === "recording") recorder.stop();
   if (previousState === "playing" && playbackHandle) {
@@ -153,9 +163,13 @@ stopButton.addEventListener("click", () => {
   state = "idle";
   updateCount();
   updateControls();
-  setStatus(previousState === "recording"
-    ? `Đã dừng ghi. Đã lưu ${recorder.length} nhịp.`
-    : "Đã dừng phát lại. Bản ghi vẫn được giữ.");
+  if (previousState === "recording") {
+    setStatus(`Đã dừng ghi. Đã lưu ${recorder.length} nhịp.`);
+  } else if (previousState === "playing") {
+    setStatus("Đã dừng phát lại. Bản ghi vẫn được giữ.");
+  } else {
+    setStatus("Đã dừng âm thanh đang phát. Bản ghi vẫn được giữ.");
+  }
 });
 
 playbackButton.addEventListener("click", () => {
