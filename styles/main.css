@@ -216,6 +216,11 @@
   transform: scale(0.985);
 }
 
+.pad:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 3px;
+}
+
 .pad__name {
   max-width: 100%;
   overflow-wrap: anywhere;
