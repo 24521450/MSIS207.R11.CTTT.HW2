@@ -61,7 +61,13 @@ function pulsePad(button) {
 }
 
 function updateStopButton(activeCount = audioEngine.activeCount) {
-  stopButton.disabled = state === "idle" && activeCount === 0;
+  const unavailable = state === "idle" && activeCount === 0;
+  // A focused native disabled button loses focus; keep its disabled ARIA state
+  // until blur, then apply the native disabled state without moving focus.
+  const preserveFocus = unavailable && document.activeElement === stopButton;
+  stopButton.setAttribute("aria-disabled", String(unavailable));
+  stopButton.disabled = unavailable && !preserveFocus;
+  stopButton.tabIndex = unavailable && !preserveFocus ? -1 : 0;
 }
 
 function updateControls() {
@@ -169,6 +175,13 @@ stopButton.addEventListener("click", () => {
     setStatus("Đã dừng phát lại. Bản ghi vẫn được giữ.");
   } else {
     setStatus("Đã dừng âm thanh đang phát. Bản ghi vẫn được giữ.");
+  }
+});
+
+stopButton.addEventListener("blur", () => {
+  if (state === "idle" && audioEngine.activeCount === 0) {
+    stopButton.disabled = true;
+    stopButton.tabIndex = -1;
   }
 });
 

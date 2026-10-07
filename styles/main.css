@@ -349,18 +349,23 @@
     transform var(--transition-fast);
 }
 
-.control-button:hover:not(:disabled) {
+.control-button:hover:not(:disabled):not([aria-disabled="true"]) {
   border-color: #555866;
   background: #2b2e39;
 }
 
-.control-button:active:not(:disabled) {
+.control-button:active:not(:disabled):not([aria-disabled="true"]) {
   transform: translateY(1px);
 }
 
-.control-button:disabled {
+.control-button:disabled,
+.control-button[aria-disabled="true"] {
   cursor: not-allowed;
   opacity: 0.42;
+}
+
+.control-button[aria-disabled="true"] {
+  pointer-events: none;
 }
 
 .control-button--record {
