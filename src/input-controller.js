@@ -7,6 +7,26 @@ function isEditableTarget(target) {
   return Boolean(target.closest?.('[contenteditable]:not([contenteditable="false"])'));
 }
 
+function getButtonActivationKey(event) {
+  if (event.key === "Enter") return "enter";
+  if (event.key === " " || event.key === "Spacebar") return "space";
+  return null;
+}
+
+function hasActivationModifier(event) {
+  return Boolean(
+    event.ctrlKey
+    || event.altKey
+    || event.metaKey
+    || event.shiftKey
+    || event.isComposing,
+  );
+}
+
+function isWithin(button, target) {
+  return target === button || Boolean(button.contains?.(target));
+}
+
 /** Read pad identity, key, and sample path directly from the HTML contract. */
 export function createInputController({
   document: documentRef = globalThis.document,
@@ -43,7 +63,15 @@ export function createInputController({
     }
     seenPadIds.add(padId);
 
-    const record = { padId, source, key, button, initiallyDisabled: button.disabled };
+    const record = {
+      padId,
+      source,
+      key,
+      button,
+      initiallyDisabled: button.disabled,
+      enterPressed: false,
+      spacePressed: false,
+    };
     records.push(record);
     button.setAttribute("aria-label", rawKey ? `${name}, phím ${rawKey.toUpperCase()}` : `${name}, chưa có phím hợp lệ`);
 
@@ -89,11 +117,59 @@ export function createInputController({
     if (record) activate(record, "keyboard");
   }
 
+  function onPadKeyDown(event, record) {
+    const activationKey = getButtonActivationKey(event);
+    if (!activationKey) return;
+
+    // Native buttons synthesize click events for Enter and Space. Cancel that
+    // default only on drum pads, then route the real key press through activate().
+    const wasDefaultPrevented = event.defaultPrevented;
+    event.preventDefault();
+    if (
+      wasDefaultPrevented
+      || hasActivationModifier(event)
+      || !enabled
+      || record.button.disabled
+    ) return;
+
+    const pressedProperty = activationKey === "enter" ? "enterPressed" : "spacePressed";
+    if (event.repeat || record[pressedProperty]) return;
+    record[pressedProperty] = true;
+
+    // Enter activates on keydown. Space is activated once on keyup, matching
+    // the usual native-button interaction while suppressing its native click.
+    if (activationKey === "enter") activate(record, "keyboard");
+  }
+
+  function onKeyUp(event) {
+    const activationKey = getButtonActivationKey(event);
+    if (!activationKey) return;
+
+    const pressedProperty = activationKey === "enter" ? "enterPressed" : "spacePressed";
+    for (const record of records) {
+      if (!record[pressedProperty]) continue;
+      record[pressedProperty] = false;
+
+      if (activationKey !== "space" || !isWithin(record.button, event.target)) continue;
+      const wasDefaultPrevented = event.defaultPrevented;
+      event.preventDefault();
+      if (
+        !wasDefaultPrevented
+        && enabled
+        && !record.button.disabled
+        && !hasActivationModifier(event)
+      ) activate(record, "keyboard");
+    }
+  }
+
   for (const record of records) {
     record.onClick = () => activate(record, "button");
+    record.onKeyDown = (event) => onPadKeyDown(event, record);
+    record.button.addEventListener("keydown", record.onKeyDown);
     record.button.addEventListener("click", record.onClick);
   }
   documentRef.addEventListener("keydown", onKeyDown);
+  documentRef.addEventListener("keyup", onKeyUp);
 
   if (configErrors.length > 0) onConfigError([...configErrors]);
 
@@ -101,12 +177,16 @@ export function createInputController({
     setEnabled(nextEnabled) {
       enabled = Boolean(nextEnabled);
       for (const record of records) {
+        record.enterPressed = false;
+        record.spacePressed = false;
         record.button.disabled = !enabled || record.initiallyDisabled;
       }
     },
     destroy() {
       documentRef.removeEventListener("keydown", onKeyDown);
+      documentRef.removeEventListener("keyup", onKeyUp);
       for (const record of records) {
+        record.button.removeEventListener("keydown", record.onKeyDown);
         record.button.removeEventListener("click", record.onClick);
       }
     },

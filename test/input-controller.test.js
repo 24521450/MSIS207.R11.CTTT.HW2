@@ -21,6 +21,10 @@ class FakeButton {
     this.attributes[name] = value;
   }
 
+  contains(target) {
+    return target === this;
+  }
+
   addEventListener(type, listener) {
     const listeners = this.listeners.get(type) ?? new Set();
     listeners.add(listener);
@@ -34,6 +38,34 @@ class FakeButton {
   emit(type, event = {}) {
     for (const listener of [...(this.listeners.get(type) ?? [])]) listener(event);
   }
+}
+
+function keyEvent(key, options = {}) {
+  let prevented = false;
+  const event = {
+    key,
+    repeat: false,
+    target: null,
+    ...options,
+    preventDefault() {
+      prevented = true;
+    },
+  };
+  Object.defineProperty(event, "defaultPrevented", { get: () => prevented });
+  return event;
+}
+
+function sendPadKeyDown(document, button, key, options = {}) {
+  const event = keyEvent(key, { target: button, ...options });
+  button.emit("keydown", event);
+  document.emit("keydown", event);
+  return event;
+}
+
+function sendKeyUp(document, key, target, options = {}) {
+  const event = keyEvent(key, { target, ...options });
+  document.emit("keyup", event);
+  return event;
 }
 
 class FakeDocument {
@@ -126,6 +158,86 @@ test("ignores repeats, modifiers, composition, and editable controls", () => {
   document.emit("keydown", { ...base, target: { isContentEditable: true } });
 
   assert.equal(activations.length, 0);
+});
+
+test("a mapped key creates one hit when its held-key repeats arrive", () => {
+  const { document, activations } = setup();
+
+  document.emit("keydown", { key: "A", repeat: false });
+  document.emit("keydown", { key: "A", repeat: true });
+  document.emit("keydown", { key: "A", repeat: true });
+
+  assert.equal(activations.length, 1);
+  assert.equal(activations[0].padId, "kick");
+});
+
+test("Enter activates a focused pad once and cancels its native click", () => {
+  const { document, buttons: [button], activations } = setup();
+
+  assert.equal(sendPadKeyDown(document, button, "Enter").defaultPrevented, true);
+  sendPadKeyDown(document, button, "Enter", { repeat: true });
+  sendPadKeyDown(document, button, "Enter", { repeat: true });
+  sendKeyUp(document, "Enter", button);
+
+  assert.equal(activations.length, 1);
+  assert.equal(activations[0].inputMethod, "keyboard");
+});
+
+test("Space activates a focused pad once on release and cancels its native click", () => {
+  const { document, buttons: [button], activations } = setup();
+
+  assert.equal(sendPadKeyDown(document, button, " ").defaultPrevented, true);
+  sendPadKeyDown(document, button, " ", { repeat: true });
+  sendPadKeyDown(document, button, " ", { repeat: true });
+  assert.equal(activations.length, 0);
+
+  assert.equal(sendKeyUp(document, " ", button).defaultPrevented, true);
+  assert.equal(activations.length, 1);
+  assert.equal(activations[0].inputMethod, "keyboard");
+});
+
+test("releasing and pressing Enter or Space again creates a new hit", () => {
+  const { document, buttons: [button], activations } = setup();
+
+  for (let index = 0; index < 2; index += 1) {
+    sendPadKeyDown(document, button, "Enter");
+    sendKeyUp(document, "Enter", button);
+  }
+  for (let index = 0; index < 2; index += 1) {
+    sendPadKeyDown(document, button, " ");
+    sendKeyUp(document, " ", button);
+  }
+
+  assert.equal(activations.length, 4);
+});
+
+test("one pointer click creates one activation", () => {
+  const { buttons: [button], activations } = setup();
+
+  button.emit("click");
+
+  assert.equal(activations.length, 1);
+  assert.equal(activations[0].inputMethod, "button");
+});
+
+test("recording receives one event while Enter is held", async () => {
+  const { createBeatRecorder } = await import("../src/beat-recorder.js");
+  const recorder = createBeatRecorder({ clock: () => 10 });
+  const button = new FakeButton();
+  const document = new FakeDocument([button]);
+  const controller = createInputController({
+    document,
+    onActivate: ({ padId }) => recorder.record(padId),
+  });
+  recorder.start();
+
+  sendPadKeyDown(document, button, "Enter");
+  sendPadKeyDown(document, button, "Enter", { repeat: true });
+  sendPadKeyDown(document, button, "Enter", { repeat: true });
+  sendKeyUp(document, "Enter", button);
+
+  assert.deepEqual(recorder.getEvents(), [{ padId: "kick", offsetMs: 0 }]);
+  controller.destroy();
 });
 
 test("rejects ambiguous duplicate key bindings", () => {
