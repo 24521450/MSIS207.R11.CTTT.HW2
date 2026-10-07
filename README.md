@@ -26,13 +26,13 @@ Mở `http://127.0.0.1:8000/` trong trình duyệt. Dùng HTTP server vì trình
 | K | High tom | Tom cao |
 | L | Crash | Cymbal |
 
-Mỗi pad là một button HTML. Có thể dùng click, thao tác chạm, Tab rồi Enter/Space, hoặc phím được hiển thị trên pad. Giữ phím không tạo hit lặp; tổ hợp Ctrl/Alt/Meta và vùng nhập liệu không kích hoạt trống.
+Mỗi pad là một button HTML. Có thể dùng click, thao tác chạm, Tab rồi Enter/Space, hoặc phím được hiển thị trên pad. Phím A–L bỏ qua `event.repeat`. Với button pad, Enter phát một hit ở `keydown`, Space phát một hit ở `keyup`; controller hủy click mặc định của button ngay trên pad để không phát trùng. Thả rồi nhấn lại vẫn tạo hit mới. Tổ hợp Ctrl/Alt/Meta, vùng nhập liệu và phím không ánh xạ không kích hoạt trống.
 
 ## Ghi và phát nhịp
 
 1. Chọn **Ghi nhịp** để bắt đầu một take mới. Take trước được thay bằng bản ghi mới.
 2. Chơi các pad. Mỗi hit được lưu theo thứ tự FIFO dưới dạng `{ padId, offsetMs }`; offset tính bằng mili-giây từ lúc bắt đầu ghi bằng đồng hồ monotonic.
-3. Chọn **Dừng** để kết thúc ghi và giữ take. Khi phát lại, cùng nút này hủy các nhịp đang chờ và dừng mọi âm thanh đang phát.
+3. Chọn **Dừng** để kết thúc ghi và giữ take. Nút này cũng khả dụng khi đang chơi tự do mà còn tiếng đang ngân; khi đó nó dừng mọi âm thanh nhưng không thay đổi take. Khi phát lại, Dừng hủy các nhịp đang chờ, ngắt âm thanh hiện tại và giữ bản ghi. Nếu bàn phím đang focus trên Dừng đúng lúc nút trở nên không khả dụng, nút báo `aria-disabled` và giữ focus đến khi người dùng rời nút; sau đó trạng thái native disabled được áp dụng.
 4. Chọn **Phát lại** để phát take theo khoảng cách đã ghi. Khoảng im lặng trước nhịp đầu tiên cũng được giữ. Có thể phát lại nhiều lần.
 5. Chọn **Xóa bản ghi** khi ở trạng thái idle để xóa take.
 
@@ -58,7 +58,7 @@ HTML là nguồn cấu hình duy nhất cho mã pad, phím và đường dẫn �
 | Tệp | Trách nhiệm |
 | --- | --- |
 | `src/main.js` | Điều phối trạng thái idle/recording/playing, nối input, audio, recorder và giao diện. |
-| `src/input-controller.js` | Đọc `data-pad-id`, `data-key`, `data-sound`; gộp click và keydown vào một callback. |
+| `src/input-controller.js` | Đọc `data-pad-id`, `data-key`, `data-sound`; gộp click, phím pad và phím điều khiển vào một callback, chặn click mặc định lặp trên Enter/Space. |
 | `src/audio-engine.js` | Tạo một `Audio` riêng cho mỗi hit, xử lý lỗi và dừng mọi instance; không truy vấn DOM. |
 | `src/beat-recorder.js` | Ghi hàng đợi FIFO `{ padId, offsetMs }` bằng `performance.now()`. |
 | `src/beat-player.js` | Lập lịch theo offset tuyệt đối, giữ thứ tự sự kiện, chờ âm thanh cuối cùng và hủy callback. |
@@ -68,19 +68,37 @@ Không có inline event handler hay thư viện runtime bên ngoài. Các mẫu 
 
 ## Kiểm tra
 
-Chạy toàn bộ kiểm tra bằng Node.js:
+### Tự động
+
+Chạy bộ kiểm tra bằng Node.js tích hợp:
 
 ```powershell
-node --test
+npm test
 ```
 
-Các kiểm tra dùng Node test runner tích hợp, không cần `npm install`. Chúng bao phủ polyphony, lỗi phát âm thanh, ánh xạ đủ chín phím, lặp phím, modifier, timestamp/FIFO, khoảng nghỉ đầu tiên, phát lại nhiều lần và hủy lịch bằng đồng hồ giả.
+Lần chạy ngày **2026-10-07** đạt **32/32** bài. Bộ kiểm tra dùng `FakeAudio` để xác nhận số instance, lỗi, `activeCount`/`onActiveChange` và dừng; fake timer cho FIFO, offset, phát lại và hủy; `FakeButton`/`FakeDocument` cho ánh xạ và lặp phím. Các mock này kiểm tra logic module, không mô phỏng native click mặc định của trình duyệt. Không cần `npm install` và không thêm dependency vào ứng dụng.
 
-Đã rà trực tiếp trong trình duyệt ở chiều rộng 375px: lưới không tràn ngang; click, A/S/L, Enter và Space phát pad; ghi/dừng/phát lại/hủy/xóa cập nhật trạng thái; focus bàn phím còn rõ khi pad sáng. Đã kiểm tra ba mẫu đại diện trong browser và không có lỗi console. Chín WAV đều hợp lệ và tái tạo cho cùng SHA-256 qua hai lần chạy generator.
+### Trình duyệt
 
-`npm test` chạy 26 kiểm tra Node.js tích hợp; tất cả đều đạt.
+Đã kiểm tra trong phiên ngày **2026-10-07, hoàn tất các lượt kiểm tra trước 13:39 (Asia/Saigon)** trên **Microsoft Edge 154.0.4258.53 (Chromium)**, phục vụ qua HTTP ở `http://127.0.0.1:8000/`. Dùng native `HTMLAudioElement` và button HTML thật. Playwright gửi keyboard down/up đến browser; các keydown lặp quan sát được `event.repeat === true`. Instrumentation chỉ theo dõi play/pause và sự kiện; nó gọi tiếp các phương thức audio native. Không dùng `dispatchEvent` để thay cho kiểm tra Enter/Space.
 
-Thời điểm phát thực tế phụ thuộc event loop, tải trang và khả năng của trình duyệt; `setTimeout` cùng HTML audio không đảm bảo độ chính xác sample-level. Recorder giữ timestamp monotonic và beat player lên lịch theo offset đã ghi trong giới hạn của browser.
+Đã xác minh:
+
+- A/S/D/F/G/H/J/K/L phát đúng chín tệp WAV. Giữ A, Enter hoặc Space qua nhiều keydown lặp chỉ ghi một hit; thả rồi nhấn lại tạo hit mới. Click chuột tạo một hit.
+- Hai instance kick cùng lúc và kick với snare cùng lúc đều ở trạng thái phát; các hit nhanh riêng biệt đều được ghi.
+- Ctrl/Alt, phím không ánh xạ và một input đang focus không tạo âm. Đổi HTML `data-key` từ A sang Q rồi reload cập nhật nhãn/ARIA name; A hết ánh xạ và q/Q phát đúng kick.
+- Ghi chuỗi kick/snare/crash đo được khoảng cách **283/250/514 ms**; phát lại đo **292/251/507 ms**. Thứ tự FIFO và khoảng im lặng đầu được giữ trong lần chạy này. Phát lại hai lần không tiêu thụ hay nhân bản take.
+- Dừng giữa phát lại ngăn các nhịp cũ; dừng rồi phát lại ngay chỉ tạo chuỗi của lượt mới. Dừng khi Crash cuối còn ngân đặt audio về paused và currentTime 0.
+- Stop bị khóa khi idle và không còn tiếng; bật khi ghi/phát hoặc còn tiếng chơi tự do. Dừng lúc chơi tự do giữ nguyên take. Tiếng kết thúc tự nhiên khóa Stop lại. Khi chính Stop đang focus, nó báo `aria-disabled` nhưng giữ focus đến khi người dùng rời nút; lúc blur nó chuyển sang native disabled. Thay đổi active count khi Record đang focus không chuyển focus. Mẫu Kick bị chặn có thông báo lỗi và Snare vẫn phát được.
+- Tab/Shift+Tab đi qua link và pad với focus ring nhìn thấy; ba viewport 375, 768 và 1440 px không tràn ngang. Luồng bình thường không có lỗi Console, page error hoặc response lỗi.
+
+Lỗi mẫu trong browser được mô phỏng bằng cách chặn request Kick; request lỗi đó là chủ ý, không thuộc kết quả tài nguyên của luồng bình thường. Đã xác minh click chuột và bàn phím trên desktop; chưa có thiết bị cảm ứng hoặc screen reader thật để kiểm tra. Browser test xác nhận trạng thái phát của audio native, không đo chất lượng nghe qua loa/tai nghe.
+
+### Giới hạn và kết quả chưa xác minh
+
+`performance.now()` tạo timestamp monotonic, còn `setTimeout` và HTML Audio chịu ảnh hưởng của event loop, tải máy và buffer âm thanh; chúng không đảm bảo thời gian chính xác đến từng sample. Sai lệch mili-giây nêu trên chỉ là kết quả của một lần chạy Edge, không phải bảo đảm cho mọi máy.
+
+Chín WAV vẫn được sinh bằng `scripts/generate_samples.py`. Lần kiểm tra này không lặp lại phép so sánh SHA-256 của hai lần chạy generator.
 
 ## Kịch bản bảo vệ trong 3 phút
 
